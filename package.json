@@ -1,0 +1,23 @@
+{
+  "name": "resumeforge",
+  "version": "1.0.0",
+  "description": "ResumeForge - A resume builder application for CSC3100",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.92.0",
+    "bootstrap": "^5.3.3",
+    "bootstrap-icons": "^1.11.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^5.0.1",
+    "html2pdf.js": "^0.10.2",
+    "sqlite3": "^5.1.7",
+    "sweetalert2": "^11.12.4",
+    "uuid": "^10.0.0"
+  }
+}

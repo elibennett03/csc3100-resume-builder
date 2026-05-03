@@ -1,0 +1,1124 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="ResumeForge - Build and tailor professional resumes with AI-powered suggestions."
+    />
+    <meta name="theme-color" content="#212529" />
+
+    <title>ResumeForge</title>
+
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
+    <link rel="apple-touch-icon" href="/images/apple-touch-icon.svg" />
+
+    <!-- Local Libraries -->
+    <link rel="stylesheet" href="/css/lib/bootstrap.min.css" />
+    <link rel="stylesheet" href="/css/lib/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="/css/lib/sweetalert2.min.css" />
+
+    <!-- Resume paper layout and print styles only -->
+    <style>
+      .resume-paper {
+        background: #fff;
+        color: #000;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 11pt;
+        line-height: 1.45;
+        padding: 40px 48px;
+        min-height: 300px;
+      }
+      .resume-name {
+        font-size: 22pt;
+        font-weight: bold;
+        font-family: Arial, sans-serif;
+        letter-spacing: 1px;
+      }
+      .resume-contact {
+        font-size: 9pt;
+        color: #444;
+        font-family: Arial, sans-serif;
+      }
+      .resume-contact span:not(:last-child)::after {
+        content: " | ";
+        color: #bbb;
+      }
+      .resume-section-title {
+        font-size: 10.5pt;
+        font-weight: bold;
+        color: #1a3a8f;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: 1px solid #1a3a8f;
+        padding-bottom: 2px;
+        margin: 12px 0 6px;
+        font-family: Arial, sans-serif;
+      }
+      .resume-job-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .resume-job-title {
+        font-weight: bold;
+        font-size: 10.5pt;
+        font-family: Arial, sans-serif;
+      }
+      .resume-job-date {
+        font-size: 9.5pt;
+        color: #555;
+        white-space: nowrap;
+        font-family: Arial, sans-serif;
+      }
+      .resume-resp-list {
+        margin: 3px 0 0 16px;
+        padding: 0;
+        list-style: disc;
+      }
+      .resume-resp-list li {
+        font-size: 10pt;
+        color: #333;
+        margin-bottom: 2px;
+      }
+      .resume-skill-cat {
+        font-size: 10pt;
+        color: #333;
+        margin-bottom: 4px;
+      }
+      .resume-cert-item,
+      .resume-award-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 4px;
+      }
+      .resume-cert-name,
+      .resume-award-name {
+        font-weight: bold;
+        font-size: 10pt;
+        font-family: Arial, sans-serif;
+      }
+      .resume-cert-date,
+      .resume-award-date {
+        font-size: 9.5pt;
+        color: #555;
+        white-space: nowrap;
+      }
+      .ai-suggestion-box {
+        border: 1px solid #9d4edd;
+        background: rgba(157, 78, 221, 0.12);
+        border-radius: 6px;
+        padding: 10px 14px;
+        margin-top: 8px;
+        font-size: 0.9rem;
+      }
+      .ai-suggestion-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #c084fc;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+      }
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #divPrintArea,
+        #divPrintArea * {
+          visibility: visible;
+        }
+        #divPrintArea {
+          display: block !important;
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          z-index: 9999;
+        }
+        .resume-paper {
+          padding: 0;
+          box-shadow: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ─── Navbar ─────────────────────────────────────────────────────────── -->
+    <nav
+      class="navbar navbar-expand-lg bg-body-tertiary border-bottom border-secondary sticky-top"
+      aria-label="Main navigation"
+    >
+      <div class="container-fluid px-4">
+        <a
+          class="navbar-brand d-flex align-items-center gap-2"
+          href="#"
+          id="lnkBrand"
+          aria-label="ResumeForge home"
+        >
+          <i
+            class="bi bi-file-earmark-person-fill text-primary fs-4"
+            aria-hidden="true"
+          ></i>
+          <span class="fw-semibold"
+            >Resume<strong class="text-primary">Forge</strong></span
+          >
+        </a>
+
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarMain"
+          aria-controls="navbarMain"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarMain">
+          <ul class="navbar-nav ms-auto gap-1" role="list">
+            <li class="nav-item" role="listitem">
+              <button
+                class="nav-link btn btn-link text-decoration-none active"
+                id="btnNavProfile"
+                aria-current="page"
+              >
+                <i class="bi bi-person-circle" aria-hidden="true"></i> Profile
+              </button>
+            </li>
+            <li class="nav-item" role="listitem">
+              <button
+                class="nav-link btn btn-link text-decoration-none"
+                id="btnNavJobs"
+              >
+                <i class="bi bi-briefcase" aria-hidden="true"></i> Experience
+              </button>
+            </li>
+            <li class="nav-item" role="listitem">
+              <button
+                class="nav-link btn btn-link text-decoration-none"
+                id="btnNavSkills"
+              >
+                <i class="bi bi-lightning-charge" aria-hidden="true"></i> Skills
+              </button>
+            </li>
+            <li class="nav-item" role="listitem">
+              <button
+                class="nav-link btn btn-link text-decoration-none"
+                id="btnNavCerts"
+              >
+                <i class="bi bi-award" aria-hidden="true"></i> Certifications
+              </button>
+            </li>
+            <li class="nav-item" role="listitem">
+              <button
+                class="nav-link btn btn-link text-decoration-none"
+                id="btnNavAwards"
+              >
+                <i class="bi bi-trophy" aria-hidden="true"></i> Awards
+              </button>
+            </li>
+            <li class="nav-item" role="listitem">
+              <button
+                class="nav-link btn btn-link text-decoration-none"
+                id="btnNavBuilder"
+              >
+                <i class="bi bi-layout-text-sidebar" aria-hidden="true"></i>
+                Builder
+              </button>
+            </li>
+            <li class="nav-item" role="listitem">
+              <button
+                class="nav-link btn btn-link text-decoration-none"
+                id="btnNavSettings"
+              >
+                <i class="bi bi-gear" aria-hidden="true"></i> Settings
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ─── Main Content ────────────────────────────────────────────────────── -->
+    <main
+      class="container-fluid px-4 py-4"
+      id="mainContent"
+      style="max-width: 1200px"
+    >
+      <!-- Profile Section -->
+      <section id="secProfile" class="" aria-label="Profile information">
+        <div class="row mb-4">
+          <div class="col-12">
+            <h1 class="fs-3 fw-bold d-flex align-items-center gap-2">
+              <i
+                class="bi bi-person-circle text-primary"
+                aria-hidden="true"
+              ></i>
+              Profile
+            </h1>
+            <p class="text-muted">
+              Your contact information and professional summary.
+            </p>
+          </div>
+        </div>
+        <div class="row justify-content-center">
+          <div class="col-lg-8">
+            <div class="card">
+              <div class="card-body">
+                <form id="frmProfile" novalidate aria-label="Profile form">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label for="txtProfileName" class="form-label"
+                        >Full Name</label
+                      >
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="txtProfileName"
+                        placeholder="Jane Doe"
+                        autocomplete="name"
+                        aria-required="true"
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <label for="txtProfileEmail" class="form-label"
+                        >Email Address</label
+                      >
+                      <input
+                        type="email"
+                        class="form-control"
+                        id="txtProfileEmail"
+                        placeholder="jane@example.com"
+                        autocomplete="email"
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <label for="txtProfilePhone" class="form-label"
+                        >Phone</label
+                      >
+                      <input
+                        type="tel"
+                        class="form-control"
+                        id="txtProfilePhone"
+                        placeholder="(555) 000-0000"
+                        autocomplete="tel"
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <label for="txtProfileLocation" class="form-label"
+                        >Location</label
+                      >
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="txtProfileLocation"
+                        placeholder="City, State"
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <label for="txtProfileLinkedIn" class="form-label"
+                        >LinkedIn URL</label
+                      >
+                      <input
+                        type="url"
+                        class="form-control"
+                        id="txtProfileLinkedIn"
+                        placeholder="https://linkedin.com/in/janedoe"
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <label for="txtProfileWebsite" class="form-label"
+                        >Website / Portfolio</label
+                      >
+                      <input
+                        type="url"
+                        class="form-control"
+                        id="txtProfileWebsite"
+                        placeholder="https://janedoe.dev"
+                      />
+                    </div>
+                    <div class="col-12">
+                      <div
+                        class="d-flex justify-content-between align-items-center mb-1"
+                      >
+                        <label for="txtProfileSummary" class="form-label mb-0"
+                          >Professional Summary</label
+                        >
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-secondary"
+                          id="btnAiSummary"
+                          aria-label="Get AI suggestion for summary"
+                        >
+                          <i
+                            class="bi bi-stars text-warning"
+                            aria-hidden="true"
+                          ></i>
+                          AI Suggest
+                        </button>
+                      </div>
+                      <textarea
+                        class="form-control"
+                        id="txtProfileSummary"
+                        rows="4"
+                        placeholder="A brief summary of your professional background and goals..."
+                      ></textarea>
+                      <div
+                        id="divSummarySuggestion"
+                        class="ai-suggestion-box d-none"
+                        role="region"
+                        aria-label="AI suggestion"
+                      >
+                        <div class="ai-suggestion-label">
+                          <i class="bi bi-stars" aria-hidden="true"></i> AI
+                          Suggestion
+                        </div>
+                        <p
+                          id="txtSummarySuggestionText"
+                          class="mb-2 text-dark"
+                        ></p>
+                        <div class="d-flex gap-2">
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-success"
+                            id="btnAcceptSummary"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            id="btnDismissSummary"
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-12 d-flex justify-content-end">
+                      <button
+                        type="submit"
+                        class="btn btn-primary"
+                        id="btnSaveProfile"
+                      >
+                        <i class="bi bi-floppy" aria-hidden="true"></i> Save
+                        Profile
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Experience Section -->
+      <section id="secJobs" class="d-none" aria-label="Work experience">
+        <div class="row mb-4">
+          <div class="col">
+            <h1 class="fs-3 fw-bold d-flex align-items-center gap-2">
+              <i class="bi bi-briefcase text-primary" aria-hidden="true"></i>
+              Work Experience
+            </h1>
+            <p class="text-muted">
+              Add jobs and responsibilities. Click the
+              <i class="bi bi-stars text-warning"></i> for AI suggestions.
+            </p>
+          </div>
+          <div class="col-auto d-flex align-items-center">
+            <button
+              class="btn btn-primary"
+              id="btnAddJob"
+              aria-label="Add new job"
+            >
+              <i class="bi bi-plus-lg" aria-hidden="true"></i> Add Job
+            </button>
+          </div>
+        </div>
+
+        <!-- Add/Edit Job Form -->
+        <div
+          id="divJobForm"
+          class="card mb-4 d-none"
+          role="region"
+          aria-label="Job entry form"
+        >
+          <div class="card-body">
+            <h2 class="h6 fw-semibold mb-3" id="hdgJobForm">Add Job</h2>
+            <form id="frmJob" novalidate aria-label="Job form">
+              <input type="hidden" id="txtJobId" />
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="txtJobCompany" class="form-label"
+                    >Company
+                    <span class="text-danger" aria-hidden="true">*</span></label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="txtJobCompany"
+                    placeholder="Acme Corp"
+                    aria-required="true"
+                  />
+                </div>
+                <div class="col-md-6">
+                  <label for="txtJobTitle" class="form-label"
+                    >Job Title
+                    <span class="text-danger" aria-hidden="true">*</span></label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="txtJobTitle"
+                    placeholder="Software Engineer"
+                    aria-required="true"
+                  />
+                </div>
+                <div class="col-md-4">
+                  <label for="txtJobLocation" class="form-label"
+                    >Location</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="txtJobLocation"
+                    placeholder="Remote / City, ST"
+                  />
+                </div>
+                <div class="col-md-4">
+                  <label for="txtJobStart" class="form-label">Start Date</label>
+                  <input type="month" class="form-control" id="txtJobStart" />
+                </div>
+                <div class="col-md-4">
+                  <label for="txtJobEnd" class="form-label"
+                    >End Date
+                    <span class="text-muted small"
+                      >(leave blank if current)</span
+                    ></label
+                  >
+                  <input type="month" class="form-control" id="txtJobEnd" />
+                </div>
+                <div class="col-12 d-flex gap-2 justify-content-end">
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    id="btnCancelJob"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" class="btn btn-primary" id="btnSaveJob">
+                    <i class="bi bi-floppy" aria-hidden="true"></i> Save Job
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Jobs List -->
+        <div id="divJobsList" role="list" aria-label="Jobs list">
+          <div id="divJobsEmpty" class="text-center text-muted py-5">
+            <i
+              class="bi bi-briefcase fs-1 d-block mb-2 opacity-25"
+              aria-hidden="true"
+            ></i>
+            <p>
+              No jobs added yet. Click <strong>Add Job</strong> to get started.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Skills Section -->
+      <section id="secSkills" class="d-none" aria-label="Skills">
+        <div class="row mb-4">
+          <div class="col">
+            <h1 class="fs-3 fw-bold d-flex align-items-center gap-2">
+              <i
+                class="bi bi-lightning-charge text-primary"
+                aria-hidden="true"
+              ></i>
+              Skills
+            </h1>
+            <p class="text-muted">Add skills and group them by category.</p>
+          </div>
+          <div class="col-auto d-flex align-items-center">
+            <button
+              class="btn btn-primary"
+              id="btnAddSkill"
+              aria-label="Add new skill"
+            >
+              <i class="bi bi-plus-lg" aria-hidden="true"></i> Add Skill
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="divSkillForm"
+          class="card mb-4 d-none"
+          role="region"
+          aria-label="Skill entry form"
+        >
+          <div class="card-body">
+            <h2 class="h6 fw-semibold mb-3" id="hdgSkillForm">Add Skill</h2>
+            <form id="frmSkill" novalidate aria-label="Skill form">
+              <input type="hidden" id="txtSkillId" />
+              <div class="row g-3">
+                <div class="col-md-5">
+                  <label for="txtSkillName" class="form-label"
+                    >Skill Name
+                    <span class="text-danger" aria-hidden="true">*</span></label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="txtSkillName"
+                    placeholder="JavaScript, Python, etc."
+                    aria-required="true"
+                  />
+                </div>
+                <div class="col-md-4">
+                  <label for="txtSkillCategory" class="form-label"
+                    >Category</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="txtSkillCategory"
+                    placeholder="Languages, Tools, Soft Skills..."
+                    list="lstSkillCategories"
+                  />
+                  <datalist id="lstSkillCategories"></datalist>
+                </div>
+                <div class="col-md-3">
+                  <label for="selSkillLevel" class="form-label">Level</label>
+                  <select class="form-select" id="selSkillLevel">
+                    <option value="0">Not specified</option>
+                    <option value="1">Beginner</option>
+                    <option value="2">Intermediate</option>
+                    <option value="3">Advanced</option>
+                    <option value="4">Expert</option>
+                  </select>
+                </div>
+                <div class="col-12 d-flex gap-2 justify-content-end">
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    id="btnCancelSkill"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    id="btnSaveSkill"
+                  >
+                    <i class="bi bi-floppy" aria-hidden="true"></i> Save Skill
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div id="divSkillsList" role="list" aria-label="Skills list">
+          <div id="divSkillsEmpty" class="text-center text-muted py-5">
+            <i
+              class="bi bi-lightning-charge fs-1 d-block mb-2 opacity-25"
+              aria-hidden="true"
+            ></i>
+            <p>No skills added yet.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Certifications Section -->
+      <section id="secCerts" class="d-none" aria-label="Certifications">
+        <div class="row mb-4">
+          <div class="col">
+            <h1 class="fs-3 fw-bold d-flex align-items-center gap-2">
+              <i class="bi bi-award text-primary" aria-hidden="true"></i>
+              Certifications
+            </h1>
+            <p class="text-muted">
+              Professional certifications and credentials.
+            </p>
+          </div>
+          <div class="col-auto d-flex align-items-center">
+            <button
+              class="btn btn-primary"
+              id="btnAddCert"
+              aria-label="Add new certification"
+            >
+              <i class="bi bi-plus-lg" aria-hidden="true"></i> Add Certification
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="divCertForm"
+          class="card mb-4 d-none"
+          role="region"
+          aria-label="Certification entry form"
+        >
+          <div class="card-body">
+            <h2 class="h6 fw-semibold mb-3" id="hdgCertForm">
+              Add Certification
+            </h2>
+            <form id="frmCert" novalidate aria-label="Certification form">
+              <input type="hidden" id="txtCertId" />
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="txtCertName" class="form-label"
+                    >Certification Name
+                    <span class="text-danger" aria-hidden="true">*</span></label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="txtCertName"
+                    placeholder="AWS Certified Solutions Architect"
+                    aria-required="true"
+                  />
+                </div>
+                <div class="col-md-4">
+                  <label for="txtCertIssuer" class="form-label"
+                    >Issuing Organization</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="txtCertIssuer"
+                    placeholder="Amazon Web Services"
+                  />
+                </div>
+                <div class="col-md-2">
+                  <label for="txtCertDate" class="form-label"
+                    >Date Earned</label
+                  >
+                  <input type="month" class="form-control" id="txtCertDate" />
+                </div>
+                <div class="col-12">
+                  <label for="txtCertDescription" class="form-label"
+                    >Description
+                    <span class="text-muted small">(optional)</span></label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="txtCertDescription"
+                    placeholder="Brief description or credential ID"
+                  />
+                </div>
+                <div class="col-12 d-flex gap-2 justify-content-end">
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    id="btnCancelCert"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    id="btnSaveCert"
+                  >
+                    <i class="bi bi-floppy" aria-hidden="true"></i> Save
+                    Certification
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div id="divCertsList" role="list" aria-label="Certifications list">
+          <div id="divCertsEmpty" class="text-center text-muted py-5">
+            <i
+              class="bi bi-award fs-1 d-block mb-2 opacity-25"
+              aria-hidden="true"
+            ></i>
+            <p>No certifications added yet.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Awards Section -->
+      <section id="secAwards" class="d-none" aria-label="Awards and honors">
+        <div class="row mb-4">
+          <div class="col">
+            <h1 class="fs-3 fw-bold d-flex align-items-center gap-2">
+              <i class="bi bi-trophy text-primary" aria-hidden="true"></i>
+              Awards & Honors
+            </h1>
+            <p class="text-muted">Recognitions, honors, and achievements.</p>
+          </div>
+          <div class="col-auto d-flex align-items-center">
+            <button
+              class="btn btn-primary"
+              id="btnAddAward"
+              aria-label="Add new award"
+            >
+              <i class="bi bi-plus-lg" aria-hidden="true"></i> Add Award
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="divAwardForm"
+          class="card mb-4 d-none"
+          role="region"
+          aria-label="Award entry form"
+        >
+          <div class="card-body">
+            <h2 class="h6 fw-semibold mb-3" id="hdgAwardForm">Add Award</h2>
+            <form id="frmAward" novalidate aria-label="Award form">
+              <input type="hidden" id="txtAwardId" />
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="txtAwardName" class="form-label"
+                    >Award Name
+                    <span class="text-danger" aria-hidden="true">*</span></label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="txtAwardName"
+                    placeholder="Dean's List, Employee of the Year..."
+                    aria-required="true"
+                  />
+                </div>
+                <div class="col-md-4">
+                  <label for="txtAwardIssuer" class="form-label"
+                    >Issuing Organization</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="txtAwardIssuer"
+                    placeholder="University, Company..."
+                  />
+                </div>
+                <div class="col-md-2">
+                  <label for="txtAwardDate" class="form-label">Date</label>
+                  <input type="month" class="form-control" id="txtAwardDate" />
+                </div>
+                <div class="col-12">
+                  <label for="txtAwardDescription" class="form-label"
+                    >Description
+                    <span class="text-muted small">(optional)</span></label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="txtAwardDescription"
+                    placeholder="Brief description"
+                  />
+                </div>
+                <div class="col-12 d-flex gap-2 justify-content-end">
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    id="btnCancelAward"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    id="btnSaveAward"
+                  >
+                    <i class="bi bi-floppy" aria-hidden="true"></i> Save Award
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div id="divAwardsList" role="list" aria-label="Awards list">
+          <div id="divAwardsEmpty" class="text-center text-muted py-5">
+            <i
+              class="bi bi-trophy fs-1 d-block mb-2 opacity-25"
+              aria-hidden="true"
+            ></i>
+            <p>No awards added yet.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Resume Builder Section -->
+      <section id="secBuilder" class="d-none" aria-label="Resume builder">
+        <div class="row mb-4">
+          <div class="col">
+            <h1 class="fs-3 fw-bold d-flex align-items-center gap-2">
+              <i
+                class="bi bi-layout-text-sidebar text-primary"
+                aria-hidden="true"
+              ></i>
+              Resume Builder
+            </h1>
+            <p class="text-muted">
+              Select what to include, preview your resume, then export as PDF.
+            </p>
+          </div>
+          <div class="col-auto d-flex align-items-center gap-2">
+            <button
+              class="btn btn-secondary"
+              id="btnSaveResume"
+              aria-label="Save resume profile"
+            >
+              <i class="bi bi-floppy" aria-hidden="true"></i> Save Profile
+            </button>
+            <button
+              class="btn btn-primary"
+              id="btnExportPdf"
+              aria-label="Export resume as PDF"
+            >
+              <i class="bi bi-file-pdf" aria-hidden="true"></i> Export PDF
+            </button>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <!-- Selection Panel -->
+          <div class="col-lg-5 col-xl-4">
+            <div
+              class="card"
+              role="region"
+              aria-label="Resume content selection"
+              style="max-height: calc(100vh - 140px); overflow-y: auto"
+            >
+              <div class="card-body">
+                <h2 class="h6 fw-semibold mb-3">Select Content</h2>
+
+                <!-- Saved Profiles -->
+                <div class="mb-3">
+                  <label
+                    for="selResumeProfile"
+                    class="form-label fw-semibold small"
+                    >Load Saved Profile</label
+                  >
+                  <div class="d-flex gap-2">
+                    <select
+                      class="form-select"
+                      id="selResumeProfile"
+                      aria-label="Select a saved resume profile"
+                    >
+                      <option value="">— New Resume —</option>
+                    </select>
+                    <button
+                      class="btn btn-sm btn-outline-danger"
+                      id="btnDeleteResume"
+                      aria-label="Delete selected resume profile"
+                      title="Delete"
+                    >
+                      <i class="bi bi-trash" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <hr />
+
+                <h3
+                  class="small fw-semibold text-secondary text-uppercase mb-2"
+                >
+                  Experience
+                </h3>
+                <div
+                  id="divBuilderJobs"
+                  role="group"
+                  aria-label="Select jobs to include"
+                  class="mb-3"
+                ></div>
+
+                <hr />
+
+                <h3
+                  class="small fw-semibold text-secondary text-uppercase mb-2"
+                >
+                  Skills
+                </h3>
+                <div
+                  id="divBuilderSkills"
+                  role="group"
+                  aria-label="Select skills to include"
+                  class="mb-3"
+                ></div>
+
+                <hr />
+
+                <h3
+                  class="small fw-semibold text-secondary text-uppercase mb-2"
+                >
+                  Certifications
+                </h3>
+                <div
+                  id="divBuilderCerts"
+                  role="group"
+                  aria-label="Select certifications to include"
+                  class="mb-3"
+                ></div>
+
+                <hr />
+
+                <h3
+                  class="small fw-semibold text-secondary text-uppercase mb-2"
+                >
+                  Awards
+                </h3>
+                <div
+                  id="divBuilderAwards"
+                  role="group"
+                  aria-label="Select awards to include"
+                  class="mb-3"
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview Panel -->
+          <div class="col-lg-7 col-xl-8">
+            <div class="card p-0">
+              <div
+                class="card-header d-flex align-items-center justify-content-between py-2"
+              >
+                <span class="fw-semibold small"
+                  ><i class="bi bi-eye" aria-hidden="true"></i> Preview</span
+                >
+              </div>
+              <div
+                class="p-3"
+                style="background: #555"
+                role="region"
+                aria-label="Resume preview"
+              >
+                <div id="divResumePreview" class="resume-paper shadow">
+                  <div class="text-center py-5" style="color: #999">
+                    <i
+                      class="bi bi-file-earmark-person d-block fs-1 mb-2"
+                      style="opacity: 0.3"
+                      aria-hidden="true"
+                    ></i>
+                    <p>Select items on the left to build your resume.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Settings Section -->
+      <section
+        id="secSettings"
+        class="d-none"
+        aria-label="Application settings"
+      >
+        <div class="row mb-4">
+          <div class="col-12">
+            <h1 class="fs-3 fw-bold d-flex align-items-center gap-2">
+              <i class="bi bi-gear text-primary" aria-hidden="true"></i>
+              Settings
+            </h1>
+            <p class="text-muted">
+              Configure your API key and application preferences.
+            </p>
+          </div>
+        </div>
+
+        <div class="row justify-content-center">
+          <div class="col-lg-8">
+            <!-- API Key -->
+            <div class="card mb-4">
+              <div class="card-body">
+                <h2 class="h6 fw-semibold mb-1">
+                  <i class="bi bi-key" aria-hidden="true"></i> Claude API Key
+                </h2>
+                <p class="text-muted small mb-3">
+                  Enter your Anthropic API key to enable AI suggestions. Stored
+                  locally in the app database only.
+                </p>
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label for="txtApiKey" class="form-label">API Key</label>
+                    <div class="input-group">
+                      <input
+                        type="password"
+                        class="form-control"
+                        id="txtApiKey"
+                        placeholder="sk-ant-..."
+                        autocomplete="off"
+                        aria-label="Claude API key"
+                      />
+                      <button
+                        class="btn btn-outline-secondary"
+                        type="button"
+                        id="btnToggleApiKey"
+                        aria-label="Show or hide API key"
+                      >
+                        <i class="bi bi-eye" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="col-12 d-flex justify-content-end">
+                    <button class="btn btn-primary" id="btnSaveApiKey">
+                      <i class="bi bi-floppy" aria-hidden="true"></i> Save Key
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- About -->
+            <div class="card mb-4">
+              <div class="card-body">
+                <h2 class="h6 fw-semibold mb-1">
+                  <i class="bi bi-info-circle" aria-hidden="true"></i> About
+                  ResumeForge
+                </h2>
+                <p class="mb-2">Version 1.0.0 &middot; CSC3100 Final Project</p>
+                <p class="text-muted small">
+                  A local resume-building application that helps you craft
+                  tailored resumes with AI-powered suggestions.
+                </p>
+                <button
+                  class="btn btn-outline-secondary mt-2"
+                  id="btnLibraryCredits"
+                  aria-label="View library attributions"
+                >
+                  <i class="bi bi-heart" aria-hidden="true"></i> Library
+                  Attributions
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Print Area (hidden until PDF export) -->
+    <div id="divPrintArea" class="d-none" aria-hidden="true">
+      <div id="divPrintResume"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/lib/bootstrap.bundle.min.js"></script>
+    <script src="/js/lib/sweetalert2.min.js"></script>
+    <script src="/js/lib/html2pdf.bundle.min.js"></script>
+    <script src="/js/app.js"></script>
+    <script src="/js/profile.js"></script>
+    <script src="/js/jobs.js"></script>
+    <script src="/js/skills.js"></script>
+    <script src="/js/certs.js"></script>
+    <script src="/js/awards.js"></script>
+    <script src="/js/builder.js"></script>
+    <script src="/js/settings.js"></script>
+  </body>
+</html>

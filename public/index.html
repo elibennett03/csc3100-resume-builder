@@ -122,6 +122,10 @@
         letter-spacing: 0.5px;
         margin-bottom: 6px;
       }
+      [data-bs-theme="dark"] .btn-outline-secondary {
+        --bs-btn-color: #adb5bd;
+        --bs-btn-border-color: #6c757d;
+      }
       @media print {
         body * {
           visibility: hidden;
@@ -163,7 +167,7 @@
             aria-hidden="true"
           ></i>
           <span class="fw-semibold"
-            >Resume<strong class="text-primary">Forge</strong></span
+            >Resume<strong class="text-primary-emphasis">Forge</strong></span
           >
         </a>
 
@@ -380,7 +384,7 @@
                         </div>
                         <p
                           id="txtSummarySuggestionText"
-                          class="mb-2 text-dark"
+                          class="mb-2"
                         ></p>
                         <div class="d-flex gap-2">
                           <button
@@ -428,7 +432,7 @@
             </h1>
             <p class="text-muted">
               Add jobs and responsibilities. Click the
-              <i class="bi bi-stars text-warning"></i> for AI suggestions.
+              <i class="bi bi-stars text-warning" aria-hidden="true"></i> for AI suggestions.
             </p>
           </div>
           <div class="col-auto d-flex align-items-center">

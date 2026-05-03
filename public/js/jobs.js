@@ -79,7 +79,7 @@ function buildJobCard(objJob) {
         </div>
         <div id="divRespSugg${objJob.intId}" class="d-none rounded mt-2 p-3" style="border:1px solid #9d4edd; background:rgba(157,78,221,0.12);" role="region" aria-label="AI suggestion">
           <div class="small fw-semibold text-uppercase mb-1" style="color:#c084fc; letter-spacing:0.5px;"><i class="bi bi-stars" aria-hidden="true"></i> AI Suggestion</div>
-          <p id="txtRespSugg${objJob.intId}" class="mb-2 text-dark"></p>
+          <p id="txtRespSugg${objJob.intId}" class="mb-2"></p>
           <div class="d-flex gap-2">
             <button class="btn btn-sm btn-success" data-action="accept-resp-sugg" data-id="${objJob.intId}">Accept</button>
             <button class="btn btn-sm btn-outline-secondary" data-action="dismiss-resp-sugg" data-id="${objJob.intId}">Dismiss</button>

@@ -177,4 +177,42 @@ document.getElementById("divSkillsList").addEventListener("click", async (objEvt
   }
 });
 
+// ─── AI Suggestion ────────────────────────────────────────────────────────────
+
+document.getElementById("btnAiSkill").addEventListener("click", async () => {
+  const strText = document.getElementById("txtSkillName").value.trim();
+  if (!strText) {
+    Swal.fire({ title: "Nothing to improve", text: "Enter a skill name first, then click AI Suggest.", icon: "info" });
+    return;
+  }
+
+  const objBtn = document.getElementById("btnAiSkill");
+  objBtn.disabled = true;
+  objBtn.innerHTML = `<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Thinking...`;
+
+  try {
+    const objResult = await getAiSuggestion(strText, "skill name for a professional resume (return only the improved skill name, nothing else)");
+    if (objResult.outcome === "success") {
+      document.getElementById("txtSkillSuggestionText").textContent = objResult.strSuggestion;
+      document.getElementById("divSkillSuggestion").classList.remove("d-none");
+    } else {
+      Swal.fire({ title: "AI Error", text: objResult.message, icon: "warning" });
+    }
+  } catch (objErr) {
+    Swal.fire({ title: "Error", text: "Could not reach AI service.", icon: "error" });
+  } finally {
+    objBtn.disabled = false;
+    objBtn.innerHTML = `<i class="bi bi-stars text-warning" aria-hidden="true"></i> AI Suggest`;
+  }
+});
+
+document.getElementById("btnAcceptSkill").addEventListener("click", () => {
+  document.getElementById("txtSkillName").value = document.getElementById("txtSkillSuggestionText").textContent;
+  document.getElementById("divSkillSuggestion").classList.add("d-none");
+});
+
+document.getElementById("btnDismissSkill").addEventListener("click", () => {
+  document.getElementById("divSkillSuggestion").classList.add("d-none");
+});
+
 document.addEventListener("DOMContentLoaded", loadSkills);

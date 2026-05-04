@@ -3,7 +3,6 @@ const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 const cors = require("cors");
-const { v4: uuidv4 } = require("uuid");
 const Anthropic = require("@anthropic-ai/sdk");
 
 const app = express();
@@ -498,35 +497,6 @@ app.delete("/api/resumes/:id", async (req, res) => {
   }
 });
 
-// ─── Settings Routes ──────────────────────────────────────────────────────────
-
-app.get("/api/settings", async (req, res) => {
-  try {
-    const arrRows = await dbAll("SELECT * FROM tblSettings", []);
-    const objSettings = {};
-    arrRows.forEach((row) => {
-      objSettings[row.strKey] = row.strValue;
-    });
-    res.json({ outcome: "success", settings: objSettings });
-  } catch (objErr) {
-    res.status(500).json({ outcome: "error", message: objErr.message });
-  }
-});
-
-app.put("/api/settings", async (req, res) => {
-  const { strKey, strValue } = req.body;
-  if (!strKey) return res.status(400).json({ outcome: "error", message: "Key is required." });
-  try {
-    await dbRun(
-      "INSERT INTO tblSettings (strKey, strValue) VALUES (?,?) ON CONFLICT(strKey) DO UPDATE SET strValue=excluded.strValue",
-      [strKey, strValue || ""]
-    );
-    res.json({ outcome: "success", message: "Setting saved." });
-  } catch (objErr) {
-    res.status(500).json({ outcome: "error", message: objErr.message });
-  }
-});
-
 // ─── AI Suggestion Route ──────────────────────────────────────────────────────
 
 app.post("/api/ai/suggest", async (req, res) => {
@@ -534,12 +504,10 @@ app.post("/api/ai/suggest", async (req, res) => {
   if (!strText) return res.status(400).json({ outcome: "error", message: "Text is required." });
 
   try {
-    // Check for user-supplied key in DB first, fall back to .env
-    const objKeySetting = await dbGet("SELECT strValue FROM tblSettings WHERE strKey='anthropicApiKey'", []);
-    const strApiKey = (objKeySetting && objKeySetting.strValue) ? objKeySetting.strValue : process.env.ANTHROPIC_API_KEY;
+    const strApiKey = process.env.ANTHROPIC_API_KEY;
 
-    if (!strApiKey || strApiKey === "your_anthropic_api_key_here") {
-      return res.status(400).json({ outcome: "error", message: "No Claude API key found. Set ANTHROPIC_API_KEY in your .env file or add one in Settings." });
+    if (!strApiKey) {
+      return res.status(400).json({ outcome: "error", message: "No Claude API key found. Set ANTHROPIC_API_KEY in your .env file." });
     }
 
     const objClient = new Anthropic({ apiKey: strApiKey });

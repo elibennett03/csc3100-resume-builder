@@ -1,7 +1,10 @@
 // ResumeForge — Jobs / Experience Section
+// Manages CRUD for job entries and their nested responsibility bullet points.
+// Responsibilities are edited inline within each job card rather than in a
+// separate form to keep the workflow fast.
 
-let arrJobs = [];
-let intEditJobId = null;
+let arrJobs = [];       // Local cache of all job objects including nested responsibilities
+let intEditJobId = null; // Tracks which job is currently being edited (null = add mode)
 
 async function loadJobs() {
   try {
@@ -15,8 +18,9 @@ async function loadJobs() {
   }
 }
 
+// Clear existing cards and re-render from the local cache
 function renderJobs() {
-  const objList = document.getElementById("divJobsList");
+  const objList  = document.getElementById("divJobsList");
   const objEmpty = document.getElementById("divJobsEmpty");
 
   objList.querySelectorAll(".job-card").forEach((el) => el.remove());
@@ -30,6 +34,7 @@ function renderJobs() {
   arrJobs.forEach((objJob) => objList.appendChild(buildJobCard(objJob)));
 }
 
+// Build a collapsible card for a single job with its responsibilities and input area
 function buildJobCard(objJob) {
   const strDates = `${formatMonthDisplay(objJob.strStartDate)} – ${formatMonthDisplay(objJob.strEndDate)}`;
   const strLoc   = objJob.strLocation ? ` · ${objJob.strLocation}` : "";
@@ -77,6 +82,7 @@ function buildJobCard(objJob) {
             </button>
           </div>
         </div>
+        <!-- AI suggestion box shown/hidden per job card -->
         <div id="divRespSugg${objJob.intId}" class="d-none rounded mt-2 p-3" style="border:1px solid #9d4edd; background:rgba(157,78,221,0.12);" role="region" aria-label="AI suggestion">
           <div class="small fw-semibold text-uppercase mb-1" style="color:#c084fc; letter-spacing:0.5px;"><i class="bi bi-stars" aria-hidden="true"></i> AI Suggestion</div>
           <p id="txtRespSugg${objJob.intId}" class="mb-2"></p>
@@ -92,6 +98,7 @@ function buildJobCard(objJob) {
   return objCard;
 }
 
+// Render existing responsibilities as a list, or show an empty-state message
 function buildResponsibilitiesHtml(objJob) {
   if (!objJob.responsibilities || objJob.responsibilities.length === 0) {
     return `<p class="text-muted small mb-0" id="respEmpty${objJob.intId}">No responsibilities added yet.</p>`;
@@ -99,6 +106,7 @@ function buildResponsibilitiesHtml(objJob) {
   return objJob.responsibilities.map(buildResponsibilityItemHtml).join("");
 }
 
+// Single responsibility row with inline edit and delete buttons
 function buildResponsibilityItemHtml(objResp) {
   return `
     <div class="d-flex align-items-start gap-2 py-2 border-bottom border-secondary-subtle" id="respItem${objResp.intId}">
@@ -119,6 +127,7 @@ function buildResponsibilityItemHtml(objResp) {
 
 // ─── Job Form ─────────────────────────────────────────────────────────────────
 
+// Reset the form to add mode and reveal it
 document.getElementById("btnAddJob").addEventListener("click", () => {
   intEditJobId = null;
   document.getElementById("hdgJobForm").textContent = "Add Job";
@@ -132,6 +141,7 @@ document.getElementById("btnCancelJob").addEventListener("click", () => {
   document.getElementById("divJobForm").classList.add("d-none");
 });
 
+// Single handler for both add and edit — branches on whether intEditJobId is set
 document.getElementById("frmJob").addEventListener("submit", async (objEvt) => {
   objEvt.preventDefault();
 
@@ -176,6 +186,8 @@ document.getElementById("frmJob").addEventListener("submit", async (objEvt) => {
 });
 
 // ─── Event Delegation ─────────────────────────────────────────────────────────
+// A single listener on the list container handles all button clicks inside every
+// job card, avoiding the need to attach and remove listeners as cards are added
 
 document.getElementById("divJobsList").addEventListener("click", async (objEvt) => {
   const objTarget = objEvt.target.closest("[data-action]");
@@ -186,6 +198,7 @@ document.getElementById("divJobsList").addEventListener("click", async (objEvt) 
   const intRespId = parseInt(objTarget.dataset.respId, 10);
   const intJobId  = parseInt(objTarget.dataset.jobId, 10);
 
+  // Populate the job form with existing values for editing
   if (strAction === "edit-job") {
     const objJob = arrJobs.find((j) => j.intId === intId);
     if (!objJob) return;
@@ -214,17 +227,19 @@ document.getElementById("divJobsList").addEventListener("click", async (objEvt) 
     else Swal.fire({ title: "Error", text: objResult.message, icon: "error" });
   }
 
+  // Toggle card body visibility without a full re-render
   if (strAction === "toggle-job") {
-    const objBody = document.getElementById(`jobBody${intId}`);
-    const objIcon = objTarget.querySelector(".bi");
+    const objBody   = document.getElementById(`jobBody${intId}`);
+    const objIcon   = objTarget.querySelector(".bi");
     const blnHidden = objBody.style.display === "none";
     objBody.style.display = blnHidden ? "" : "none";
     objIcon.className = blnHidden ? "bi bi-chevron-up" : "bi bi-chevron-down";
     objTarget.closest("[aria-expanded]").setAttribute("aria-expanded", blnHidden ? "true" : "false");
   }
 
+  // Save a new responsibility and append it to the DOM without a full reload
   if (strAction === "add-resp") {
-    const objTxt = document.getElementById(`txtNewResp${intId}`);
+    const objTxt  = document.getElementById(`txtNewResp${intId}`);
     const strText = objTxt.value.trim();
     if (!strText) return;
     const objResult = await apiFetch(`/api/jobs/${intId}/responsibilities`, "POST", { strText });
@@ -234,8 +249,9 @@ document.getElementById("divJobsList").addEventListener("click", async (objEvt) 
       if (objJob) {
         if (!objJob.responsibilities) objJob.responsibilities = [];
         objJob.responsibilities.push(objResult.responsibility);
+        // Remove the empty-state message if it's still showing
         const objRespList = document.getElementById(`respList${intId}`);
-        const objEmpty = objRespList.querySelector(`#respEmpty${intId}`);
+        const objEmpty    = objRespList.querySelector(`#respEmpty${intId}`);
         if (objEmpty) objEmpty.remove();
         objRespList.insertAdjacentHTML("beforeend", buildResponsibilityItemHtml(objResult.responsibility));
       }
@@ -244,8 +260,9 @@ document.getElementById("divJobsList").addEventListener("click", async (objEvt) 
     }
   }
 
+  // Send the typed responsibility text to Gemini and show the suggestion inline
   if (strAction === "ai-resp") {
-    const objTxt = document.getElementById(`txtNewResp${intId}`);
+    const objTxt  = document.getElementById(`txtNewResp${intId}`);
     const strText = objTxt.value.trim();
     if (!strText) {
       Swal.fire({ title: "Nothing to improve", text: "Type a responsibility first.", icon: "info" });
@@ -264,6 +281,7 @@ document.getElementById("divJobsList").addEventListener("click", async (objEvt) 
     }
   }
 
+  // Copy the AI suggestion into the textarea so the user can review before saving
   if (strAction === "accept-resp-sugg") {
     document.getElementById(`txtNewResp${intId}`).value = document.getElementById(`txtRespSugg${intId}`).textContent;
     document.getElementById(`divRespSugg${intId}`).classList.add("d-none");
@@ -273,8 +291,9 @@ document.getElementById("divJobsList").addEventListener("click", async (objEvt) 
     document.getElementById(`divRespSugg${intId}`).classList.add("d-none");
   }
 
+  // Open a SweetAlert textarea pre-filled with the current text for inline editing
   if (strAction === "edit-resp") {
-    const objRespItem = document.getElementById(`respItem${intRespId}`);
+    const objRespItem   = document.getElementById(`respItem${intRespId}`);
     const strCurrentText = objRespItem.querySelector("span").textContent.replace(/^•\s*/, "");
     const { value: strNewText } = await Swal.fire({
       title: "Edit Responsibility",
@@ -287,8 +306,9 @@ document.getElementById("divJobsList").addEventListener("click", async (objEvt) 
     if (!strNewText || !strNewText.trim()) return;
     const objResult = await apiFetch(`/api/jobs/${intJobId}/responsibilities/${intRespId}`, "PUT", { strText: strNewText.trim() });
     if (objResult.outcome === "success") {
+      // Update the DOM directly rather than re-rendering the whole list
       objRespItem.querySelector("span").textContent = `• ${strNewText.trim()}`;
-      const objJob = arrJobs.find((j) => j.intId === intJobId);
+      const objJob  = arrJobs.find((j) => j.intId === intJobId);
       if (objJob) {
         const objResp = objJob.responsibilities.find((r) => r.intId === intRespId);
         if (objResp) objResp.strText = strNewText.trim();
@@ -311,6 +331,7 @@ document.getElementById("divJobsList").addEventListener("click", async (objEvt) 
   }
 });
 
+// Allow keyboard users to toggle a job card by pressing Enter or Space on the header
 document.getElementById("divJobsList").addEventListener("keydown", (objEvt) => {
   if (objEvt.key === "Enter" || objEvt.key === " ") {
     const objHeader = objEvt.target.closest("[aria-expanded]");

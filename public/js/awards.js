@@ -1,7 +1,8 @@
 // ResumeForge — Awards Section
+// Standard CRUD module for awards, honors, and other recognitions.
 
-let arrAwards = [];
-let intEditAwardId = null;
+let arrAwards      = [];   // Local cache of award objects
+let intEditAwardId = null; // Tracks which award is being edited (null = add mode)
 
 async function loadAwards() {
   try {
@@ -29,6 +30,7 @@ function renderAwards() {
   objEmpty.classList.add("d-none");
 
   arrAwards.forEach((objAward) => {
+    // Combine issuer and date into a single subtitle line, omitting whichever is absent
     const strDate = objAward.strDate ? formatMonthDisplay(objAward.strDate) : "";
     const strSub  = [objAward.strIssuer, strDate].filter(Boolean).join(" · ");
 
@@ -57,6 +59,8 @@ function renderAwards() {
     objList.appendChild(objItem);
   });
 }
+
+// ─── Award Form ───────────────────────────────────────────────────────────────
 
 document.getElementById("btnAddAward").addEventListener("click", () => {
   intEditAwardId = null;
@@ -109,12 +113,13 @@ document.getElementById("frmAward").addEventListener("submit", async (objEvt) =>
   }
 });
 
+// Edit and delete actions delegated to the list container
 document.getElementById("divAwardsList").addEventListener("click", async (objEvt) => {
   const objTarget = objEvt.target.closest("[data-action]");
   if (!objTarget) return;
 
   const strAction = objTarget.dataset.action;
-  const intId = parseInt(objTarget.dataset.id, 10);
+  const intId     = parseInt(objTarget.dataset.id, 10);
 
   if (strAction === "edit-award") {
     const objAward = arrAwards.find((a) => a.intId === intId);
@@ -138,6 +143,7 @@ document.getElementById("divAwardsList").addEventListener("click", async (objEvt
     if (!objConfirm.isConfirmed) return;
     const objResult = await apiFetch(`/api/awards/${intId}`, "DELETE");
     if (objResult.outcome === "success") {
+      // Remove from local cache and re-render to avoid an extra network request
       arrAwards = arrAwards.filter((a) => a.intId !== intId);
       renderAwards();
     }

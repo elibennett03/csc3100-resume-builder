@@ -1,7 +1,10 @@
 // ResumeForge — Skills Section
+// Manages CRUD for skills. Skills are grouped by category and rendered as
+// badge tags. The category datalist provides autocomplete for existing categories
+// so users stay consistent without being forced into a fixed list.
 
-let arrSkills = [];
-let intEditSkillId = null;
+let arrSkills      = [];    // Local cache of all skill objects
+let intEditSkillId = null;  // Tracks which skill is being edited (null = add mode)
 
 async function loadSkills() {
   try {
@@ -16,6 +19,7 @@ async function loadSkills() {
   }
 }
 
+// Group skills by category and render each group as a card of badge tags
 function renderSkills() {
   const objList  = document.getElementById("divSkillsList");
   const objEmpty = document.getElementById("divSkillsEmpty");
@@ -29,7 +33,7 @@ function renderSkills() {
 
   objEmpty.classList.add("d-none");
 
-  // Group by category
+  // Build a map of category → [skills] for grouped rendering
   const objByCategory = {};
   arrSkills.forEach((objSkill) => {
     const strCat = objSkill.strCategory || "General";
@@ -37,7 +41,7 @@ function renderSkills() {
     objByCategory[strCat].push(objSkill);
   });
 
-  // Build a sorted array of category names to iterate
+  // Preserve insertion order for categories while still sorting alphabetically
   let arrCatNames = [];
   arrSkills.forEach((objSkill) => {
     const strKey = objSkill.strCategory || "General";
@@ -78,14 +82,16 @@ function renderSkills() {
   });
 }
 
+// Convert the numeric level value stored in the DB to a readable label
 function getLevelLabel(intLevel) {
   const arrLabels = ["", "Beginner", "Intermediate", "Advanced", "Expert"];
   return arrLabels[intLevel] || "";
 }
 
+// Rebuild the datalist so the category input always suggests the user's existing categories
 function updateSkillCategoryDatalist() {
   const objDl  = document.getElementById("lstSkillCategories");
-  let arrCats = [];
+  let arrCats  = [];
   arrSkills.forEach((objSkill) => {
     if (objSkill.strCategory && arrCats.indexOf(objSkill.strCategory) === -1) {
       arrCats.push(objSkill.strCategory);
@@ -93,6 +99,8 @@ function updateSkillCategoryDatalist() {
   });
   objDl.innerHTML = arrCats.map((c) => `<option value="${escapeHtml(c)}">`).join("");
 }
+
+// ─── Skill Form ───────────────────────────────────────────────────────────────
 
 document.getElementById("btnAddSkill").addEventListener("click", () => {
   intEditSkillId = null;
@@ -143,12 +151,13 @@ document.getElementById("frmSkill").addEventListener("submit", async (objEvt) =>
   }
 });
 
+// Edit and delete actions delegated to the list container
 document.getElementById("divSkillsList").addEventListener("click", async (objEvt) => {
   const objTarget = objEvt.target.closest("[data-action]");
   if (!objTarget) return;
 
   const strAction = objTarget.dataset.action;
-  const intId = parseInt(objTarget.dataset.id, 10);
+  const intId     = parseInt(objTarget.dataset.id, 10);
 
   if (strAction === "edit-skill") {
     const objSkill = arrSkills.find((s) => s.intId === intId);
@@ -171,14 +180,16 @@ document.getElementById("divSkillsList").addEventListener("click", async (objEvt
     if (!objConfirm.isConfirmed) return;
     const objResult = await apiFetch(`/api/skills/${intId}`, "DELETE");
     if (objResult.outcome === "success") {
+      // Remove from local cache and re-render rather than doing a full server round-trip
       arrSkills = arrSkills.filter((s) => s.intId !== intId);
       renderSkills();
     }
   }
 });
 
-// ─── AI Suggestion ────────────────────────────────────────────────────────────
+// ─── AI Suggestion — Skill Name ───────────────────────────────────────────────
 
+// Send the typed skill name to Gemini to get a more professional or ATS-friendly version
 document.getElementById("btnAiSkill").addEventListener("click", async () => {
   const strText = document.getElementById("txtSkillName").value.trim();
   if (!strText) {

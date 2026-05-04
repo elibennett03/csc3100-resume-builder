@@ -1,5 +1,10 @@
 // ResumeForge — Settings Section
+// Handles saving and loading the user's Gemini API key.
+// The key is stored in the local SQLite database and never sent anywhere
+// except to the Google Gemini API when making AI suggestion requests.
 
+// Load the stored key on page open — show a masked placeholder if one exists
+// so the user knows a key is saved without revealing it in plaintext
 async function loadSettings() {
   try {
     const objResult = await apiFetch("/api/settings");
@@ -13,9 +18,10 @@ async function loadSettings() {
   }
 }
 
+// Toggle the API key input between password (hidden) and text (visible) modes
 document.getElementById("btnToggleApiKey").addEventListener("click", () => {
   const objInput = document.getElementById("txtApiKey");
-  const objIcon = document.getElementById("btnToggleApiKey").querySelector(".bi");
+  const objIcon  = document.getElementById("btnToggleApiKey").querySelector(".bi");
   if (objInput.type === "password") {
     objInput.type = "text";
     objIcon.className = "bi bi-eye-slash";
@@ -25,7 +31,7 @@ document.getElementById("btnToggleApiKey").addEventListener("click", () => {
   }
 });
 
-// Clear mask when user starts typing
+// Clear the mask when the user focuses the field so they can type a new key cleanly
 document.getElementById("txtApiKey").addEventListener("focus", () => {
   const objInput = document.getElementById("txtApiKey");
   if (objInput.dataset.hasKey === "true" && objInput.value.startsWith("•")) {
@@ -36,8 +42,9 @@ document.getElementById("txtApiKey").addEventListener("focus", () => {
 
 document.getElementById("btnSaveApiKey").addEventListener("click", async () => {
   const objInput = document.getElementById("txtApiKey");
-  const strKey = objInput.value.trim();
+  const strKey   = objInput.value.trim();
 
+  // If the user didn't clear the mask, they haven't entered a new key — skip the save
   if (strKey.startsWith("•")) return;
 
   if (!strKey) {
@@ -51,6 +58,7 @@ document.getElementById("btnSaveApiKey").addEventListener("click", async () => {
   try {
     const objResult = await apiFetch("/api/settings", "PUT", { strKey: "geminiApiKey", strValue: strKey });
     if (objResult.outcome === "success") {
+      // Re-mask the field after saving so the key isn't left visible on screen
       objInput.dataset.hasKey = "true";
       objInput.type = "password";
       objInput.value = "••••••••••••••••••••••••••••••••••••••••";

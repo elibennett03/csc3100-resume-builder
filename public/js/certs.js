@@ -1,7 +1,8 @@
 // ResumeForge — Certifications Section
+// Standard CRUD module for professional certifications and credentials.
 
-let arrCerts = [];
-let intEditCertId = null;
+let arrCerts      = [];   // Local cache of certification objects
+let intEditCertId = null; // Tracks which cert is being edited (null = add mode)
 
 async function loadCerts() {
   try {
@@ -29,6 +30,7 @@ function renderCerts() {
   objEmpty.classList.add("d-none");
 
   arrCerts.forEach((objCert) => {
+    // Combine issuer and date into a single subtitle line, omitting whichever is absent
     const strDate = objCert.strDate ? formatMonthDisplay(objCert.strDate) : "";
     const strSub  = [objCert.strIssuer, strDate].filter(Boolean).join(" · ");
 
@@ -57,6 +59,8 @@ function renderCerts() {
     objList.appendChild(objItem);
   });
 }
+
+// ─── Cert Form ────────────────────────────────────────────────────────────────
 
 document.getElementById("btnAddCert").addEventListener("click", () => {
   intEditCertId = null;
@@ -109,12 +113,13 @@ document.getElementById("frmCert").addEventListener("submit", async (objEvt) => 
   }
 });
 
+// Edit and delete actions delegated to the list container
 document.getElementById("divCertsList").addEventListener("click", async (objEvt) => {
   const objTarget = objEvt.target.closest("[data-action]");
   if (!objTarget) return;
 
   const strAction = objTarget.dataset.action;
-  const intId = parseInt(objTarget.dataset.id, 10);
+  const intId     = parseInt(objTarget.dataset.id, 10);
 
   if (strAction === "edit-cert") {
     const objCert = arrCerts.find((c) => c.intId === intId);

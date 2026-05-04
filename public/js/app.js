@@ -1,5 +1,8 @@
 // ResumeForge — Main SPA Controller
+// Handles navigation between sections, shared API helpers, and global utilities
+// used by all other feature modules.
 
+// Maps each nav button to the section it controls
 const arrNavItems = [
   { strBtnId: "btnNavProfile",  strSecId: "secProfile"  },
   { strBtnId: "btnNavJobs",     strSecId: "secJobs"     },
@@ -10,6 +13,7 @@ const arrNavItems = [
   { strBtnId: "btnNavSettings", strSecId: "secSettings" },
 ];
 
+// Show one section and hide all others; update aria-current for accessibility
 function navigateTo(strSectionId) {
   arrNavItems.forEach((objItem) => {
     const objSec = document.getElementById(objItem.strSecId);
@@ -26,18 +30,18 @@ function navigateTo(strSectionId) {
     }
   });
 
-  // Collapse mobile nav if open
+  // Close the mobile navbar after a nav item is tapped
   const objNavCollapse = document.getElementById("navbarMain");
   if (objNavCollapse && objNavCollapse.classList.contains("show")) {
     const objToggler = document.querySelector(".navbar-toggler");
     if (objToggler) objToggler.click();
   }
 
-  // Trigger section-specific load
+  // The builder needs fresh data every time the user enters it
   if (strSectionId === "secBuilder") loadBuilderSection();
 }
 
-// Wire up nav buttons
+// Attach click handlers to every nav button using the mapping array
 arrNavItems.forEach((objItem) => {
   const objBtn = document.getElementById(objItem.strBtnId);
   if (objBtn) {
@@ -45,7 +49,7 @@ arrNavItems.forEach((objItem) => {
   }
 });
 
-// Brand click goes to profile
+// Clicking the brand logo returns to the Profile section
 document.getElementById("lnkBrand").addEventListener("click", (objEvt) => {
   objEvt.preventDefault();
   navigateTo("secProfile");
@@ -53,6 +57,7 @@ document.getElementById("lnkBrand").addEventListener("click", (objEvt) => {
 
 // ─── Generic API Helper ───────────────────────────────────────────────────────
 
+// Central fetch wrapper used by all modules — keeps headers and JSON parsing consistent
 async function apiFetch(strUrl, strMethod = "GET", objBody = null) {
   const objOptions = {
     method: strMethod,
@@ -65,6 +70,8 @@ async function apiFetch(strUrl, strMethod = "GET", objBody = null) {
 
 // ─── AI Suggestion Helper ─────────────────────────────────────────────────────
 
+// Shared by profile, jobs, and skills modules — sends text to the backend
+// which forwards it to Gemini and returns the improved version
 async function getAiSuggestion(strText, strContext = "resume entry") {
   const objResult = await apiFetch("/api/ai/suggest", "POST", { strText, strContext });
   return objResult;
@@ -72,6 +79,8 @@ async function getAiSuggestion(strText, strContext = "resume entry") {
 
 // ─── Format Month String ──────────────────────────────────────────────────────
 
+// Converts a stored "YYYY-MM" date string into a readable "Mon YYYY" label.
+// Returns "Present" when strDate is empty (used for current positions)
 function formatMonthDisplay(strDate) {
   if (!strDate) return "Present";
   const [strYear, strMonth] = strDate.split("-");
@@ -81,6 +90,7 @@ function formatMonthDisplay(strDate) {
 
 // ─── Library Attribution Popup ────────────────────────────────────────────────
 
+// Displays the required third-party library credits; accessible from Settings
 function showLibraryCredits() {
   Swal.fire({
     title: "Library Attributions",
@@ -108,6 +118,8 @@ function showLibraryCredits() {
 
 // ─── Utility ──────────────────────────────────────────────────────────────────
 
+// Safely escapes user-supplied strings before inserting them into innerHTML
+// to prevent XSS — all dynamic content must go through this before rendering
 function escapeHtml(strText) {
   if (!strText) return "";
   const objDiv = document.createElement("div");
@@ -115,7 +127,7 @@ function escapeHtml(strText) {
   return objDiv.innerHTML;
 }
 
-// Init
+// Start on the Profile section when the page first loads
 document.addEventListener("DOMContentLoaded", () => {
   navigateTo("secProfile");
 });

@@ -1,5 +1,8 @@
 // ResumeForge — Profile Section
+// Handles loading, saving, and AI-assisted improvement of the user's
+// contact information and professional summary.
 
+// Populate all form fields from the stored profile on load
 async function loadProfile() {
   try {
     const objResult = await apiFetch("/api/profile");
@@ -18,21 +21,23 @@ async function loadProfile() {
   }
 }
 
+// Validate required fields before sending to the API
 document.getElementById("frmProfile").addEventListener("submit", async (objEvt) => {
   objEvt.preventDefault();
 
-  const strName = document.getElementById("txtProfileName").value.trim();
+  const strName  = document.getElementById("txtProfileName").value.trim();
   const strEmail = document.getElementById("txtProfileEmail").value.trim();
 
-  let blnError = false;
+  let blnError   = false;
   let strMessage = "";
 
   if (!strName) {
-    blnError = true;
+    blnError   = true;
     strMessage += "<p>Full name is required.</p>";
   }
+  // Basic email format check — only runs if the field is not empty
   if (strEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(strEmail)) {
-    blnError = true;
+    blnError   = true;
     strMessage += "<p>Please enter a valid email address.</p>";
   }
 
@@ -41,6 +46,7 @@ document.getElementById("frmProfile").addEventListener("submit", async (objEvt) 
     return;
   }
 
+  // Disable the button while the request is in flight to prevent double-saves
   const objBtn = document.getElementById("btnSaveProfile");
   objBtn.disabled = true;
   objBtn.innerHTML = `<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Saving...`;
@@ -68,7 +74,10 @@ document.getElementById("frmProfile").addEventListener("submit", async (objEvt) 
   }
 });
 
-// AI suggestion for summary
+// ─── AI Suggestion — Professional Summary ─────────────────────────────────────
+
+// Send the current summary text to Gemini and display the result inline
+// so the user can accept or dismiss it without leaving the form
 document.getElementById("btnAiSummary").addEventListener("click", async () => {
   const strText = document.getElementById("txtProfileSummary").value.trim();
   if (!strText) {
@@ -99,6 +108,7 @@ document.getElementById("btnAiSummary").addEventListener("click", async () => {
   }
 });
 
+// Replace the summary textarea content with the AI suggestion
 document.getElementById("btnAcceptSummary").addEventListener("click", () => {
   const strSugg = document.getElementById("txtSummarySuggestionText").textContent;
   document.getElementById("txtProfileSummary").value = strSugg;
@@ -109,5 +119,5 @@ document.getElementById("btnDismissSummary").addEventListener("click", () => {
   document.getElementById("divSummarySuggestion").classList.add("d-none");
 });
 
-// Load on init
+// Load profile data as soon as the DOM is ready
 document.addEventListener("DOMContentLoaded", loadProfile);

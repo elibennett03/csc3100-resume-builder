@@ -1,19 +1,24 @@
+// ResumeForge — Express backend
+// Provides RESTful API endpoints for all resume data and proxies AI suggestion
+// requests to Google Gemini. The SQLite database is created automatically on
+// first run — no manual setup required.
+
 require("dotenv").config();
 const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
-const cors = require("cors");
 const { GoogleGenAI } = require("@google/genai");
 
 const app = express();
 const intPort = process.env.PORT || 3000;
 
-app.use(cors());
+// Parse JSON request bodies and serve the frontend from /public
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 // ─── Database Setup ───────────────────────────────────────────────────────────
 
+// Open (or create) the SQLite file next to server.js
 const db = new sqlite3.Database(path.join(__dirname, "resumeforge.db"), (objErr) => {
   if (objErr) {
     console.error("Database connection error:", objErr.message);
@@ -24,9 +29,12 @@ const db = new sqlite3.Database(path.join(__dirname, "resumeforge.db"), (objErr)
 });
 
 function initializeDatabase() {
+  // db.serialize ensures each statement runs in order, not concurrently
   db.serialize(() => {
+    // Enforce foreign-key constraints (SQLite disables them by default)
     db.run("PRAGMA foreign_keys = ON");
 
+    // Single-row profile table — one user per install
     db.run(`CREATE TABLE IF NOT EXISTS tblProfile (
       intId INTEGER PRIMARY KEY AUTOINCREMENT,
       strName TEXT DEFAULT '',
@@ -38,7 +46,7 @@ function initializeDatabase() {
       strSummary TEXT DEFAULT ''
     )`, (objErr) => {
       if (objErr) return console.error(objErr);
-      // Insert default row if empty
+      // Seed an empty row so GET /api/profile always returns something
       db.get("SELECT COUNT(*) as cnt FROM tblProfile", (e, row) => {
         if (row && row.cnt === 0) {
           db.run("INSERT INTO tblProfile (strName) VALUES ('')");
@@ -46,6 +54,7 @@ function initializeDatabase() {
       });
     });
 
+    // Each job entry — responsibilities are stored separately in tblResponsibilities
     db.run(`CREATE TABLE IF NOT EXISTS tblJobs (
       intId INTEGER PRIMARY KEY AUTOINCREMENT,
       strCompany TEXT NOT NULL,
@@ -56,6 +65,7 @@ function initializeDatabase() {
       dtmCreated TEXT DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    // Individual bullet points belonging to a job; cascade-deleted when the job is removed
     db.run(`CREATE TABLE IF NOT EXISTS tblResponsibilities (
       intId INTEGER PRIMARY KEY AUTOINCREMENT,
       intJobId INTEGER NOT NULL,
@@ -63,6 +73,7 @@ function initializeDatabase() {
       FOREIGN KEY (intJobId) REFERENCES tblJobs(intId) ON DELETE CASCADE
     )`);
 
+    // Skills with an optional category (e.g. "Languages") and proficiency level
     db.run(`CREATE TABLE IF NOT EXISTS tblSkills (
       intId INTEGER PRIMARY KEY AUTOINCREMENT,
       strName TEXT NOT NULL,
@@ -86,6 +97,7 @@ function initializeDatabase() {
       strDescription TEXT DEFAULT ''
     )`);
 
+    // A resume profile is a named snapshot of selected items for a specific job application
     db.run(`CREATE TABLE IF NOT EXISTS tblResumeProfiles (
       intId INTEGER PRIMARY KEY AUTOINCREMENT,
       strName TEXT NOT NULL,
@@ -93,6 +105,8 @@ function initializeDatabase() {
       dtmCreated TEXT DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    // Junction table — records which jobs, skills, certs, and awards are included
+    // in each saved resume profile
     db.run(`CREATE TABLE IF NOT EXISTS tblResumeItems (
       intId INTEGER PRIMARY KEY AUTOINCREMENT,
       intResumeId INTEGER NOT NULL,
@@ -101,6 +115,7 @@ function initializeDatabase() {
       FOREIGN KEY (intResumeId) REFERENCES tblResumeProfiles(intId) ON DELETE CASCADE
     )`);
 
+    // Key-value store for app settings (e.g. user-supplied Gemini API key)
     db.run(`CREATE TABLE IF NOT EXISTS tblSettings (
       intId INTEGER PRIMARY KEY AUTOINCREMENT,
       strKey TEXT UNIQUE NOT NULL,
@@ -111,12 +126,14 @@ function initializeDatabase() {
   });
 }
 
-// ─── Helper ───────────────────────────────────────────────────────────────────
+// ─── DB Promise Helpers ───────────────────────────────────────────────────────
+// Wrap the callback-based sqlite3 API in promises so routes can use async/await
 
 function dbRun(strSql, arrParams) {
   return new Promise((resolve, reject) => {
     db.run(strSql, arrParams, function (objErr) {
       if (objErr) reject(objErr);
+      // 'this' gives access to lastID and changes from the sqlite3 driver
       else resolve({ lastID: this.lastID, changes: this.changes });
     });
   });
@@ -142,6 +159,7 @@ function dbAll(strSql, arrParams) {
 
 // ─── Profile Routes ───────────────────────────────────────────────────────────
 
+// Always returns the first (and only) profile row
 app.get("/api/profile", async (req, res) => {
   try {
     const objProfile = await dbGet("SELECT * FROM tblProfile ORDER BY intId LIMIT 1", []);
@@ -151,6 +169,7 @@ app.get("/api/profile", async (req, res) => {
   }
 });
 
+// Upsert pattern — update the existing row if one exists, otherwise insert
 app.put("/api/profile", async (req, res) => {
   const { strName, strEmail, strPhone, strLinkedIn, strLocation, strWebsite, strSummary } = req.body;
   try {
@@ -172,8 +191,9 @@ app.put("/api/profile", async (req, res) => {
   }
 });
 
-// ─── Jobs Routes ─────────────────────────────────────────────────────────────
+// ─── Jobs Routes ──────────────────────────────────────────────────────────────
 
+// Returns all jobs with their responsibilities nested inside each job object
 app.get("/api/jobs", async (req, res) => {
   try {
     const arrJobs = await dbAll("SELECT * FROM tblJobs ORDER BY strStartDate DESC", []);
@@ -189,6 +209,7 @@ app.get("/api/jobs", async (req, res) => {
   }
 });
 
+// Returns the newly created job so the frontend can render it without a second fetch
 app.post("/api/jobs", async (req, res) => {
   const { strCompany, strTitle, strStartDate, strEndDate, strLocation } = req.body;
   if (!strCompany || !strTitle) {
@@ -220,6 +241,7 @@ app.put("/api/jobs/:id", async (req, res) => {
   }
 });
 
+// Deleting a job also removes its responsibilities via the ON DELETE CASCADE foreign key
 app.delete("/api/jobs/:id", async (req, res) => {
   try {
     await dbRun("DELETE FROM tblJobs WHERE intId=?", [req.params.id]);
@@ -243,6 +265,7 @@ app.get("/api/jobs/:id/responsibilities", async (req, res) => {
   }
 });
 
+// Returns the new responsibility row so the frontend can append it immediately
 app.post("/api/jobs/:id/responsibilities", async (req, res) => {
   const { strText } = req.body;
   if (!strText) return res.status(400).json({ outcome: "error", message: "Text is required." });
@@ -279,6 +302,7 @@ app.delete("/api/jobs/:id/responsibilities/:rid", async (req, res) => {
 
 // ─── Skills Routes ────────────────────────────────────────────────────────────
 
+// Sorted by category then name so the frontend can group them without sorting itself
 app.get("/api/skills", async (req, res) => {
   try {
     const arrSkills = await dbAll("SELECT * FROM tblSkills ORDER BY strCategory, strName", []);
@@ -432,6 +456,7 @@ app.get("/api/resumes", async (req, res) => {
   }
 });
 
+// Creates the profile header row then inserts each selected item into tblResumeItems
 app.post("/api/resumes", async (req, res) => {
   const { strName, strTargetJob, arrItems } = req.body;
   if (!strName) return res.status(400).json({ outcome: "error", message: "Name is required." });
@@ -455,6 +480,7 @@ app.post("/api/resumes", async (req, res) => {
   }
 });
 
+// Returns the profile with its item list nested so the builder can restore checkbox state
 app.get("/api/resumes/:id", async (req, res) => {
   try {
     const objResume = await dbGet("SELECT * FROM tblResumeProfiles WHERE intId=?", [req.params.id]);
@@ -466,6 +492,7 @@ app.get("/api/resumes/:id", async (req, res) => {
   }
 });
 
+// Delete-and-reinsert items to handle additions, removals, and reorders in one step
 app.put("/api/resumes/:id", async (req, res) => {
   const { strName, strTargetJob, arrItems } = req.body;
   try {
@@ -488,6 +515,7 @@ app.put("/api/resumes/:id", async (req, res) => {
   }
 });
 
+// Cascade via foreign key also removes all tblResumeItems rows for this profile
 app.delete("/api/resumes/:id", async (req, res) => {
   try {
     await dbRun("DELETE FROM tblResumeProfiles WHERE intId=?", [req.params.id]);
@@ -499,6 +527,7 @@ app.delete("/api/resumes/:id", async (req, res) => {
 
 // ─── Settings Routes ──────────────────────────────────────────────────────────
 
+// Returns all settings as a flat key-value object for easy lookup on the frontend
 app.get("/api/settings", async (req, res) => {
   try {
     const arrRows = await dbAll("SELECT * FROM tblSettings", []);
@@ -512,6 +541,7 @@ app.get("/api/settings", async (req, res) => {
   }
 });
 
+// Upsert via ON CONFLICT so callers don't need to know if the key already exists
 app.put("/api/settings", async (req, res) => {
   const { strKey, strValue } = req.body;
   if (!strKey) return res.status(400).json({ outcome: "error", message: "Key is required." });
@@ -532,10 +562,12 @@ app.post("/api/ai/suggest", async (req, res) => {
   const { strText, strContext } = req.body;
   if (!strText) return res.status(400).json({ outcome: "error", message: "Text is required." });
 
+  // strContext customizes the prompt based on which field is being improved
+  // (e.g. "job responsibility bullet point", "professional summary", "skill name")
   const strPrompt = `You are a professional resume writing assistant. The user has written the following ${strContext || "resume entry"}. Rewrite it to be more impactful, concise, and action-oriented using strong action verbs and quantifiable achievements where possible. Return ONLY the improved text — no explanation, no bullet point prefix, no quotes.\n\nOriginal: "${strText}"`;
 
   try {
-    // Gemini first: user-supplied key from DB, then .env
+    // Prefer the key the user entered in Settings; fall back to the .env value
     const objGeminiSetting = await dbGet("SELECT strValue FROM tblSettings WHERE strKey='geminiApiKey'", []);
     const strGeminiKey = (objGeminiSetting && objGeminiSetting.strValue) ? objGeminiSetting.strValue : process.env.GEMINI_API_KEY;
 

@@ -1,16 +1,22 @@
 // ResumeForge — Resume Builder Section
+// Lets the user select which jobs (and individual responsibilities), skills,
+// certifications, and awards to include in a resume. The preview re-renders
+// live on every checkbox change. Completed selections can be saved as named
+// resume profiles and reloaded later for different job applications.
 
 let intCurrentResumeId = null;
 
-// Cached data to avoid repeated API calls on every checkbox change
+// Cache all data fetched when entering the builder so checkbox changes can
+// update the preview without making a network request on every tick
 let objBuilderCache = { objProfile: {}, arrJobs: [], arrSkills: [], arrCerts: [], arrAwards: [] };
 
-// Called every time user navigates to the Builder section
+// Called every time the user navigates to the Builder section
 async function loadBuilderSection() {
   await loadBuilderData();
   await loadSavedResumeProfiles();
 }
 
+// Fetch all resume content from the API and populate the checkbox panels
 async function loadBuilderData() {
   try {
     const objPR = await apiFetch("/api/profile");
@@ -20,10 +26,10 @@ async function loadBuilderData() {
     const objAR = await apiFetch("/api/awards");
 
     objBuilderCache.objProfile = objPR.profile || {};
-    objBuilderCache.arrJobs    = objJR.jobs || [];
-    objBuilderCache.arrSkills  = objSR.skills || [];
+    objBuilderCache.arrJobs    = objJR.jobs    || [];
+    objBuilderCache.arrSkills  = objSR.skills  || [];
     objBuilderCache.arrCerts   = objCR.certifications || [];
-    objBuilderCache.arrAwards  = objAR.awards || [];
+    objBuilderCache.arrAwards  = objAR.awards  || [];
 
     renderBuilderJobs(objBuilderCache.arrJobs);
     renderBuilderSkills(objBuilderCache.arrSkills);
@@ -35,8 +41,10 @@ async function loadBuilderData() {
   }
 }
 
-// ─── Checkbox Renderers ───────────────────────────────────────────────────────
+// ─── Checkbox Panel Renderers ─────────────────────────────────────────────────
 
+// Jobs get a parent checkbox for the whole job plus child checkboxes for each
+// responsibility — toggling the parent also toggles all its children
 function renderBuilderJobs(arrBuilderJobs) {
   const objContainer = document.getElementById("divBuilderJobs");
   if (arrBuilderJobs.length === 0) {
@@ -74,7 +82,7 @@ function renderBuilderJobs(arrBuilderJobs) {
     `;
   }).join("");
 
-  // Wire up parent job checkbox to toggle all its responsibility checkboxes
+  // Wire up each job checkbox to cascade its checked state to all child responsibility checkboxes
   arrBuilderJobs.forEach((objJob) => {
     const objJobChk = document.getElementById(`chkJob${objJob.intId}`);
     if (!objJobChk) return;
@@ -147,23 +155,26 @@ function renderBuilderAwards(arrBuilderAwards) {
 
 // ─── Live Preview ─────────────────────────────────────────────────────────────
 
+// Re-render the preview pane from the current checkbox state and cached data
 function updateResumePreview() {
-  const objData = collectResumeData();
-  const strHtml = buildResumeHtml(objData);
+  const objData  = collectResumeData();
+  const strHtml  = buildResumeHtml(objData);
   document.getElementById("divResumePreview").innerHTML = strHtml;
 }
 
+// Walk the checked checkboxes and look up the full objects from the cache
+// to assemble the data structure that buildResumeHtml expects
 function collectResumeData() {
-  const objProfile = objBuilderCache.objProfile;
-
-  // Checked jobs & responsibilities (from cache)
+  const objProfile      = objBuilderCache.objProfile;
   const objBuilderJobsEl = document.getElementById("divBuilderJobs");
-  const arrJobChks = objBuilderJobsEl.querySelectorAll('[data-type="job"]:checked');
+
+  // For each checked job, also collect only its checked responsibilities
+  const arrJobChks  = objBuilderJobsEl.querySelectorAll('[data-type="job"]:checked');
   const arrBuiltJobs = [];
 
   arrJobChks.forEach((objChk) => {
-    const intJobId = parseInt(objChk.dataset.id, 10);
-    const objFull  = objBuilderCache.arrJobs.find((j) => j.intId === intJobId);
+    const intJobId  = parseInt(objChk.dataset.id, 10);
+    const objFull   = objBuilderCache.arrJobs.find((j) => j.intId === intJobId);
     if (!objFull) return;
     const arrRespChks = objBuilderJobsEl.querySelectorAll(`[data-job-id="${intJobId}"]:checked`);
     const arrRespFull = [];
@@ -185,45 +196,32 @@ function collectResumeData() {
     });
   });
 
-  // Skills
+  // Collect checked skill IDs then map back to full objects from cache
   const arrSkillIds = [];
   document.getElementById("divBuilderSkills").querySelectorAll('[data-type="skill"]:checked').forEach((el) => {
     arrSkillIds.push(parseInt(el.dataset.id, 10));
   });
-  const arrBuiltSkills = [];
-  objBuilderCache.arrSkills.forEach((s) => {
-    if (arrSkillIds.indexOf(s.intId) !== -1) arrBuiltSkills.push(s);
-  });
+  const arrBuiltSkills = objBuilderCache.arrSkills.filter((s) => arrSkillIds.indexOf(s.intId) !== -1);
 
-  // Certs
   const arrCertIds = [];
   document.getElementById("divBuilderCerts").querySelectorAll('[data-type="certification"]:checked').forEach((el) => {
     arrCertIds.push(parseInt(el.dataset.id, 10));
   });
-  const arrBuiltCerts = [];
-  objBuilderCache.arrCerts.forEach((c) => {
-    if (arrCertIds.indexOf(c.intId) !== -1) arrBuiltCerts.push(c);
-  });
+  const arrBuiltCerts = objBuilderCache.arrCerts.filter((c) => arrCertIds.indexOf(c.intId) !== -1);
 
-  // Awards
   const arrAwardIds = [];
   document.getElementById("divBuilderAwards").querySelectorAll('[data-type="award"]:checked').forEach((el) => {
     arrAwardIds.push(parseInt(el.dataset.id, 10));
   });
-  const arrBuiltAwards = [];
-  objBuilderCache.arrAwards.forEach((a) => {
-    if (arrAwardIds.indexOf(a.intId) !== -1) arrBuiltAwards.push(a);
-  });
+  const arrBuiltAwards = objBuilderCache.arrAwards.filter((a) => arrAwardIds.indexOf(a.intId) !== -1);
 
   return { objProfile, arrJobs: arrBuiltJobs, arrSkills: arrBuiltSkills, arrCerts: arrBuiltCerts, arrAwards: arrBuiltAwards };
 }
 
+// Build the full resume HTML string from the selected data.
+// This same HTML is used for the live preview and for the PDF export.
 function buildResumeHtml(objData) {
-  const objProfile = objData.objProfile;
-  const arrJobs    = objData.arrJobs;
-  const arrSkills  = objData.arrSkills;
-  const arrCerts   = objData.arrCerts;
-  const arrAwards  = objData.arrAwards;
+  const { objProfile, arrJobs, arrSkills, arrCerts, arrAwards } = objData;
   const blnHasContent = arrJobs.length || arrSkills.length || arrCerts.length || arrAwards.length || objProfile.strName;
 
   if (!blnHasContent) {
@@ -236,6 +234,7 @@ function buildResumeHtml(objData) {
     strHtml += `<div class="resume-name">${escapeHtml(objProfile.strName)}</div>`;
   }
 
+  // Build the contact line — only include fields the user has actually filled in
   const arrContactParts = [];
   if (objProfile.strPhone)    arrContactParts.push(escapeHtml(objProfile.strPhone));
   if (objProfile.strEmail)    arrContactParts.push(escapeHtml(objProfile.strEmail));
@@ -249,7 +248,6 @@ function buildResumeHtml(objData) {
 
   strHtml += `</div>`; // /resume-header
 
-  // Summary
   if (objProfile.strSummary) {
     strHtml += `
       <div class="resume-section">
@@ -259,7 +257,6 @@ function buildResumeHtml(objData) {
     `;
   }
 
-  // Experience
   if (arrJobs.length) {
     strHtml += `<div class="resume-section"><div class="resume-section-title">Experience</div>`;
     arrJobs.forEach((objJob) => {
@@ -288,7 +285,7 @@ function buildResumeHtml(objData) {
     strHtml += `</div>`;
   }
 
-  // Skills
+  // Group skills by category alphabetically so the layout is consistent
   if (arrSkills.length) {
     strHtml += `<div class="resume-section"><div class="resume-section-title">Skills</div><div class="resume-skills-grid">`;
     const objByCat = {};
@@ -309,7 +306,6 @@ function buildResumeHtml(objData) {
     strHtml += `</div></div>`;
   }
 
-  // Certifications
   if (arrCerts.length) {
     strHtml += `<div class="resume-section"><div class="resume-section-title">Certifications</div>`;
     arrCerts.forEach((objCert) => {
@@ -327,7 +323,6 @@ function buildResumeHtml(objData) {
     strHtml += `</div>`;
   }
 
-  // Awards
   if (arrAwards.length) {
     strHtml += `<div class="resume-section"><div class="resume-section-title">Awards & Honors</div>`;
     arrAwards.forEach((objAward) => {
@@ -350,6 +345,9 @@ function buildResumeHtml(objData) {
 
 // ─── Live Checkbox → Preview Updates ─────────────────────────────────────────
 
+// Single delegated listener on the builder section catches all checkbox changes
+// for skills, certs, and awards (job responsibility changes are handled above
+// because they also need to cascade to the parent job checkbox)
 document.getElementById("secBuilder").addEventListener("change", (objEvt) => {
   if (objEvt.target.matches('[data-type]')) {
     updateResumePreview();
@@ -374,19 +372,21 @@ document.getElementById("btnSaveResume").addEventListener("click", async () => {
         Swal.showValidationMessage("Profile name is required.");
         return false;
       }
+      // Pack both values into one string to pass through Swal's single return value
       return strEnteredName + "||" + document.getElementById("swalResumeTarget").value.trim();
     },
   });
 
   if (!objSwalResult.isConfirmed || !objSwalResult.value) return;
 
-  const arrParts    = objSwalResult.value.split("||");
-  const strSaveName = arrParts[0];
+  const arrParts      = objSwalResult.value.split("||");
+  const strSaveName   = arrParts[0];
   const strSaveTarget = arrParts[1] || "";
-  const arrItems = gatherSelectedItems();
+  const arrItems      = gatherSelectedItems();
 
   try {
     let objResult;
+    // Update the existing profile if one is loaded; otherwise create a new one
     if (intCurrentResumeId) {
       objResult = await apiFetch(`/api/resumes/${intCurrentResumeId}`, "PUT", {
         strName: strSaveName,
@@ -413,6 +413,7 @@ document.getElementById("btnSaveResume").addEventListener("click", async () => {
   }
 });
 
+// Collect all currently checked data-type checkboxes into the format the API expects
 function gatherSelectedItems() {
   const arrItems = [];
   document.getElementById("secBuilder").querySelectorAll("[data-type]:checked").forEach((objChk) => {
@@ -423,11 +424,12 @@ function gatherSelectedItems() {
 
 // ─── Load Saved Profiles ──────────────────────────────────────────────────────
 
+// Repopulate the profile dropdown, preserving the currently selected value
 async function loadSavedResumeProfiles() {
   try {
-    const objResult = await apiFetch("/api/resumes");
+    const objResult   = await apiFetch("/api/resumes");
     const arrProfiles = objResult.resumes || [];
-    const objSel = document.getElementById("selResumeProfile");
+    const objSel      = document.getElementById("selResumeProfile");
     const strCurrentVal = objSel.value;
     objSel.innerHTML = `<option value="">— New Resume —</option>`;
     arrProfiles.forEach((objP) => {
@@ -442,6 +444,7 @@ async function loadSavedResumeProfiles() {
   }
 }
 
+// When the user picks a saved profile, reload the builder and restore its checkbox state
 document.getElementById("selResumeProfile").addEventListener("change", async () => {
   const strVal = document.getElementById("selResumeProfile").value;
   if (!strVal) {
@@ -458,15 +461,14 @@ async function loadResumeProfile(intId) {
     if (objResult.outcome !== "success") return;
     const objResume = objResult.resume;
 
-    // First reload builder data (checkboxes), then set states
+    // Re-render the checkboxes with fresh data, then override their checked state
     await loadBuilderData();
 
-    // Uncheck everything first
+    // Uncheck everything first so only explicitly saved items end up selected
     document.getElementById("secBuilder").querySelectorAll("[data-type]").forEach((el) => {
       el.checked = false;
     });
 
-    // Check only the saved items
     objResume.items.forEach((objItem) => {
       const strSelector = `[data-type="${objItem.strItemType}"][data-id="${objItem.intItemId}"]`;
       const objEl = document.getElementById("secBuilder").querySelector(strSelector);
@@ -500,9 +502,12 @@ document.getElementById("btnDeleteResume").addEventListener("click", async () =>
 // ─── PDF Export ───────────────────────────────────────────────────────────────
 
 document.getElementById("btnExportPdf").addEventListener("click", async () => {
-  const strName = (objBuilderCache.objProfile && objBuilderCache.objProfile.strName) ? objBuilderCache.objProfile.strName : "Resume";
+  const strName = (objBuilderCache.objProfile && objBuilderCache.objProfile.strName)
+    ? objBuilderCache.objProfile.strName
+    : "Resume";
 
-  const objPrintDiv = document.getElementById("divPrintResume");
+  // Copy the current preview HTML into the hidden print area before generating
+  const objPrintDiv   = document.getElementById("divPrintResume");
   const strResumeHtml = document.getElementById("divResumePreview").innerHTML;
 
   objPrintDiv.innerHTML = `<div class="resume-paper">${strResumeHtml}</div>`;
@@ -511,11 +516,11 @@ document.getElementById("btnExportPdf").addEventListener("click", async () => {
 
   const objElement = document.getElementById("divPrintResume");
   const objOptions = {
-    margin:       [0.5, 0.5, 0.5, 0.5],
-    filename:     `${strName.replace(/\s+/g, "_")}_Resume.pdf`,
-    image:        { type: "jpeg", quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true },
-    jsPDF:        { unit: "in", format: "letter", orientation: "portrait" },
+    margin:      [0.5, 0.5, 0.5, 0.5],
+    filename:    `${strName.replace(/\s+/g, "_")}_Resume.pdf`,
+    image:       { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF:       { unit: "in", format: "letter", orientation: "portrait" },
   };
 
   try {
@@ -523,6 +528,7 @@ document.getElementById("btnExportPdf").addEventListener("click", async () => {
   } catch (objErr) {
     Swal.fire({ title: "Export Error", text: "Could not generate PDF.", icon: "error" });
   } finally {
+    // Hide the print area again so it doesn't interfere with the rest of the UI
     document.getElementById("divPrintArea").classList.add("d-none");
     document.getElementById("divPrintArea").setAttribute("aria-hidden", "true");
   }

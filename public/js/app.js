@@ -95,6 +95,7 @@ function showLibraryCredits() {
           <li><strong>Express 5</strong> — MIT License — <a href="https://expressjs.com" target="_blank" rel="noopener">expressjs.com</a></li>
           <li><strong>sqlite3</strong> — BSD-3-Clause — <a href="https://github.com/TryGhost/node-sqlite3" target="_blank" rel="noopener">github.com/TryGhost/node-sqlite3</a></li>
           <li><strong>dotenv</strong> — BSD-2-Clause — <a href="https://github.com/motdotla/dotenv" target="_blank" rel="noopener">github.com/motdotla/dotenv</a></li>
+          <li><strong>Google GenAI SDK</strong> — Apache-2.0 — <a href="https://github.com/googleapis/js-genai" target="_blank" rel="noopener">github.com/googleapis/js-genai</a></li>
         </ul>
         <p class="mb-0" style="color:#8892b0;font-size:0.8rem">Thank you to all the open-source contributors who made this possible.</p>
       </div>

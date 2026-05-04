@@ -1065,6 +1065,49 @@
 
         <div class="row justify-content-center">
           <div class="col-lg-8">
+            <!-- Gemini API Key -->
+            <div class="card mb-4">
+              <div class="card-body">
+                <h2 class="h6 fw-semibold mb-1">
+                  <i class="bi bi-key" aria-hidden="true"></i> Gemini API Key
+                </h2>
+                <p class="text-muted small mb-3">
+                  Enter your Google Gemini API key to power AI suggestions.
+                  Stored locally in the app database only — never shared.
+                  If not set, the app falls back to any Claude key in your
+                  <code>.env</code> file.
+                </p>
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label for="txtApiKey" class="form-label">API Key</label>
+                    <div class="input-group">
+                      <input
+                        type="password"
+                        class="form-control"
+                        id="txtApiKey"
+                        placeholder="AIza..."
+                        autocomplete="off"
+                        aria-label="Gemini API key"
+                      />
+                      <button
+                        class="btn btn-outline-secondary"
+                        type="button"
+                        id="btnToggleApiKey"
+                        aria-label="Show or hide API key"
+                      >
+                        <i class="bi bi-eye" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="col-12 d-flex justify-content-end">
+                    <button class="btn btn-primary" id="btnSaveApiKey">
+                      <i class="bi bi-floppy" aria-hidden="true"></i> Save Key
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- About -->
             <div class="card mb-4">
               <div class="card-body">
@@ -1075,8 +1118,7 @@
                 <p class="mb-2">Version 1.0.0 &middot; CSC3100 Final Project</p>
                 <p class="text-muted small">
                   A local resume-building application that helps you craft
-                  tailored resumes with AI-powered suggestions. The Claude API
-                  key is configured via the <code>.env</code> file.
+                  tailored resumes with AI-powered suggestions via Google Gemini.
                 </p>
                 <button
                   class="btn btn-outline-secondary mt-2"

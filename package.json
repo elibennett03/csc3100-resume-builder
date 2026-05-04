@@ -9,7 +9,7 @@
     "dev": "node server.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.92.0",
+    "@google/genai": "^1.51.0",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
     "cors": "^2.8.5",

@@ -1,3 +1,5 @@
+This was just a file i created to keep track of exact requirements.
+
 Tech Stack
 
 Frontend: HTML, CSS (Bootstrap or Tailwind), vanilla JavaScript — single index.html SPA

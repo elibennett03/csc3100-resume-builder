@@ -13,7 +13,6 @@ const arrNavItems = [
   { strBtnId: "btnNavSettings", strSecId: "secSettings" },
 ];
 
-// Show one section and hide all others; update aria-current for accessibility
 function navigateTo(strSectionId) {
   arrNavItems.forEach((objItem) => {
     const objSec = document.getElementById(objItem.strSecId);

@@ -28,6 +28,7 @@ const db = new sqlite3.Database(path.join(__dirname, "resumeforge.db"), (objErr)
   }
 });
 
+// AI (Claude Code) was used to scaffold the database schema below to save time
 function initializeDatabase() {
   // db.serialize ensures each statement runs in order, not concurrently
   db.serialize(() => {
@@ -158,7 +159,6 @@ function dbAll(strSql, arrParams) {
 }
 
 // ─── Profile Routes ───────────────────────────────────────────────────────────
-
 // Always returns the first (and only) profile row
 app.get("/api/profile", async (req, res) => {
   try {

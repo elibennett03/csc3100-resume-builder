@@ -42,7 +42,6 @@ async function loadBuilderData() {
 }
 
 // ─── Checkbox Panel Renderers ─────────────────────────────────────────────────
-
 // Jobs get a parent checkbox for the whole job plus child checkboxes for each
 // responsibility — toggling the parent also toggles all its children
 function renderBuilderJobs(arrBuilderJobs) {
@@ -154,6 +153,7 @@ function renderBuilderAwards(arrBuilderAwards) {
 }
 
 // ─── Live Preview ─────────────────────────────────────────────────────────────
+// AI assisted me here with the live resume preview logic
 
 // Re-render the preview pane from the current checkbox state and cached data
 function updateResumePreview() {
@@ -500,6 +500,7 @@ document.getElementById("btnDeleteResume").addEventListener("click", async () =>
 });
 
 // ─── PDF Export ───────────────────────────────────────────────────────────────
+// AI assisted me here with the PDF export logic
 
 document.getElementById("btnExportPdf").addEventListener("click", async () => {
   const strName = (objBuilderCache.objProfile && objBuilderCache.objProfile.strName)

@@ -19,7 +19,6 @@ async function loadSkills() {
   }
 }
 
-// Group skills by category and render each group as a card of badge tags
 function renderSkills() {
   const objList  = document.getElementById("divSkillsList");
   const objEmpty = document.getElementById("divSkillsEmpty");

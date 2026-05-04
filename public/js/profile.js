@@ -21,7 +21,6 @@ async function loadProfile() {
   }
 }
 
-// Validate required fields before sending to the API
 document.getElementById("frmProfile").addEventListener("submit", async (objEvt) => {
   objEvt.preventDefault();
 

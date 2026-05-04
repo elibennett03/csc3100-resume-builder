@@ -34,7 +34,6 @@ function renderJobs() {
   arrJobs.forEach((objJob) => objList.appendChild(buildJobCard(objJob)));
 }
 
-// Build a collapsible card for a single job with its responsibilities and input area
 function buildJobCard(objJob) {
   const strDates = `${formatMonthDisplay(objJob.strStartDate)} – ${formatMonthDisplay(objJob.strEndDate)}`;
   const strLoc   = objJob.strLocation ? ` · ${objJob.strLocation}` : "";
